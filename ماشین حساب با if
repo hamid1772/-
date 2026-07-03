@@ -1,0 +1,33 @@
+
+#این یک ماشین حساب میاشد 
+while(1):
+      javab=0
+      input_1=float(input("enter number1:"))
+      input_2=float(input("enter nuber2:"))
+      input_3=input ("enter sukshen:*.×.÷.+.-")
+      if  input_3=="*":
+          javab=input_1*input_2
+          print(javab)
+      elif input_3=="+"  :
+         javab=input_1+input_2
+         print(javab)
+      elif   input_3=="-" :
+                javab=input_1- input_2
+                print(javab)
+      elif input_3=="/"  :
+         javab=input_1/input_2
+         print(javab)
+      elif input_3 == "/":
+         if input_2 == 0:
+               print("تقسیم بر صفر امکان‌پذیر نیست")
+         else:
+                 print(input_1 / input_2)    
+      elif input_3=="**":
+          javab=input_1**input_2
+          print(javab)  
+      else:   
+        print("____")
+      exit_program = input("ادامه؟ (y/n): ")
+
+      if exit_program == "n":
+           break
