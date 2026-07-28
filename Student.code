@@ -1,0 +1,101 @@
+import json
+try:
+    with open("contacts.json", "r") as file:
+        con = json.load(file)
+except FileNotFoundError:
+    con = []
+def save_contacts():
+    with open("contacts.json", "w") as file:
+        json.dump(con, file)
+def add_student():
+    
+         a= {
+    "name": input("what is your name: "),
+    "age": int(input("what is your age: ")),
+    "grades": [
+        float(input("nomreh 1: ")),
+        float(input("nomreh 2: ")),
+        float(input("nomreh 3: "))
+    ]
+}  
+         con.append(a)
+         print("اضافه شد")
+        
+def show_student():
+    for student in con:
+        print(student)      
+
+def calculate_average():
+    name = input("Student name: ")
+
+    for x in con:
+        if name == x["name"]:
+            average = sum(x["grades"]) / len(x["grades"])
+            print(average)
+            if average>=10:
+                print("قبول")
+            else:
+                print("مردود")    
+            break
+ 
+def search_student():
+    newlist = []
+    t = input("what is your name: ")
+
+    for x in con:
+        if t == x["name"]:
+            newlist.append(x)
+            save_contacts()
+
+    if len(newlist) == 0:
+        print("مخاطب پیدا نشد")
+    else:
+        print(newlist)
+def delete_student():
+    d = input("what is your name is delite:")
+    for x in con:
+             if d == x["name"]:
+                con.remove(x)
+                save_contacts()
+                print("انجام شد")
+                print(con)
+def edit_student():
+    name = input("what is your name: ")
+    for x in con:
+        if name == x["name"]:
+            age= input("what is your new phone: ")
+            grades= input("what is your new email: ")
+
+            x["age"] = age
+            save_contacts()
+            x["grades"] = grades
+            save_contacts()
+
+            print("ویرایش انجام شد")
+            break
+       
+while (1):
+    input_1 = int(input("""
+        1. افزودن مخاطب
+        2. نمایش مخاطب
+        3. جستجوی مخاطب
+        4. حذف مخاطب
+        5. ویرایش
+             6. خروج
+             7.معدل
+    """))
+
+    if input_1 == 6:
+        break
+    if input_1 == 1:
+        add_student()
+    if input_1 == 2:
+        show_student()
+    elif input_1 == 3:
+        search_student()
+    elif input_1 == 4:
+        delete_student()
+    elif input_1 == 5:
+       edit_student()           
+    elif input_1==7:
+        calculate_average()       
