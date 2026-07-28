@@ -1,0 +1,93 @@
+import json
+try:
+    with open("contacts.json", "r") as file:
+        con = json.load(file)
+except FileNotFoundError:
+    con = []
+def save_contacts():
+    with open("contacts.json", "w") as file:
+        json.dump(con, file)
+        
+def add_contact():
+    
+        a = {
+            "name": input("what is your name:"),
+            "phone": input("what is your phone:"),
+            "email": input("what is your email:")
+        }
+        con.append(a)
+        save_contacts()
+        print("اضافه شد")
+    
+    # افزودن مخاطب
+
+def show_contact():
+    # نمایش مخاطبین
+    print(con)
+    
+
+def search_contact():
+    newlist = []
+    t = input("what is your name: ")
+
+    for x in con:
+        if t == x["name"]:
+            newlist.append(x)
+            save_contacts()
+
+    if len(newlist) == 0:
+        print("مخاطب پیدا نشد")
+    else:
+        print(newlist)
+    # جستجو
+
+def delete_contact():
+    d = input("what is your name is delite:")
+    for x in con:
+             if d == x["name"]:
+                con.remove(x)
+                save_contacts()
+                print("انجام شد")
+                print(con)
+                break
+    # حذف
+
+def edit_contact():
+    name = input("what is your name: ")
+    for x in con:
+        if name == x["name"]:
+            phone = input("what is your new phone: ")
+            email = input("what is your new email: ")
+
+            x["phone"] = phone
+            save_contacts()
+            x["email"] = email
+            save_contacts()
+
+            print("ویرایش انجام شد")
+            break
+    # ویرایش
+while (1):
+    input_1 = int(input("""
+        1. افزودن مخاطب
+        2. نمایش مخاطب
+        3. جستجوی مخاطب
+        4. حذف مخاطب
+        5. ویرایش
+        6. خروج
+    """))
+
+    if input_1 == 6:
+        break
+    if input_1 == 1:
+        add_contact()
+    if input_1 == 2:
+        show_contact()
+    elif input_1 == 3:
+        search_contact()
+    elif input_1 == 4:
+        delete_contact()
+    elif input_1 == 5:
+       edit_contact()
+    
+    
