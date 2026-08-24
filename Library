@@ -1,0 +1,1243 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+
+from database import (
+    add_book,
+    get_all_books,
+    get_available_books,
+    update_book,
+    delete_book,
+    add_member,
+    get_all_members,
+    delete_member,
+    borrow_book,
+    return_book,
+    get_active_borrowings,
+    get_all_borrowings,
+    search_books,
+    get_book_count,
+    get_member_count,
+    get_active_borrowing_count,
+    get_total_stock
+)
+
+
+# =========================================================
+# WINDOW
+# =========================================================
+
+root = tk.Tk()
+
+root.title("Library Management")
+
+root.geometry("1100x750")
+
+
+# =========================================================
+# GLOBAL VARIABLES
+# =========================================================
+
+selected_book_id = None
+
+selected_member_id = None
+
+member_map = {}
+
+book_map = {}
+
+borrowing_map = {}
+
+
+# =========================================================
+# BOOK INPUTS
+# =========================================================
+
+tk.Label(
+    root,
+    text="Title:"
+).grid(
+    row=0,
+    column=0
+)
+
+title_entry = tk.Entry(root)
+
+title_entry.grid(
+    row=0,
+    column=1
+)
+
+
+tk.Label(
+    root,
+    text="Author:"
+).grid(
+    row=1,
+    column=0
+)
+
+author_entry = tk.Entry(root)
+
+author_entry.grid(
+    row=1,
+    column=1
+)
+
+
+tk.Label(
+    root,
+    text="Publish Year:"
+).grid(
+    row=2,
+    column=0
+)
+
+year_entry = tk.Entry(root)
+
+year_entry.grid(
+    row=2,
+    column=1
+)
+
+
+tk.Label(
+    root,
+    text="Stock:"
+).grid(
+    row=3,
+    column=0
+)
+
+stock_entry = tk.Entry(root)
+
+stock_entry.grid(
+    row=3,
+    column=1
+)
+
+
+# =========================================================
+# BOOK TREEVIEW
+# =========================================================
+
+books_tree = ttk.Treeview(
+    root,
+
+    columns=(
+        "id",
+        "title",
+        "author",
+        "year",
+        "stock"
+    ),
+
+    show="headings",
+
+    height=10
+)
+
+
+books_tree.heading(
+    "id",
+    text="ID"
+)
+
+books_tree.heading(
+    "title",
+    text="Title"
+)
+
+books_tree.heading(
+    "author",
+    text="Author"
+)
+
+books_tree.heading(
+    "year",
+    text="Year"
+)
+
+books_tree.heading(
+    "stock",
+    text="Stock"
+)
+
+
+books_tree.grid(
+    row=5,
+    column=0,
+    columnspan=5,
+    padx=10,
+    pady=10
+)
+
+
+# =========================================================
+# SHOW BOOKS
+# =========================================================
+
+def show_books():
+
+    for item in books_tree.get_children():
+
+        books_tree.delete(item)
+
+
+    books = get_all_books()
+
+
+    for book in books:
+
+        books_tree.insert(
+            "",
+            "end",
+            values=book
+        )
+
+
+# =========================================================
+# SELECT BOOK
+# =========================================================
+
+def select_book(event):
+
+    global selected_book_id
+
+    selected = books_tree.selection()
+
+    if not selected:
+
+        return
+
+
+    item = books_tree.item(
+        selected[0]
+    )
+
+    values = item["values"]
+
+
+    selected_book_id = values[0]
+
+
+    title_entry.delete(
+        0,
+        tk.END
+    )
+
+    author_entry.delete(
+        0,
+        tk.END
+    )
+
+    year_entry.delete(
+        0,
+        tk.END
+    )
+
+    stock_entry.delete(
+        0,
+        tk.END
+    )
+
+
+    title_entry.insert(
+        0,
+        values[1]
+    )
+
+    author_entry.insert(
+        0,
+        values[2]
+    )
+
+    year_entry.insert(
+        0,
+        values[3]
+    )
+
+    stock_entry.insert(
+        0,
+        values[4]
+    )
+
+
+books_tree.bind(
+    "<ButtonRelease-1>",
+    select_book
+)
+
+
+# =========================================================
+# ADD BOOK
+# =========================================================
+
+def add_book_gui():
+
+    title = title_entry.get().strip()
+
+    author = author_entry.get().strip()
+
+    year = year_entry.get().strip()
+
+    stock = stock_entry.get().strip()
+
+
+    if not title or not author or not year or not stock:
+
+        messagebox.showerror(
+            "Error",
+            "Please fill all book fields"
+        )
+
+        return
+
+
+    try:
+
+        year = int(year)
+
+        stock = int(stock)
+
+    except ValueError:
+
+        messagebox.showerror(
+            "Error",
+            "Year and stock must be numbers"
+        )
+
+        return
+
+
+    if year < 0:
+
+        messagebox.showerror(
+            "Error",
+            "Year cannot be negative"
+        )
+
+        return
+
+
+    if stock < 0:
+
+        messagebox.showerror(
+            "Error",
+            "Stock cannot be negative"
+        )
+
+        return
+
+
+    success, message = add_book(
+        title,
+        author,
+        year,
+        stock
+    )
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        clear_book_entries()
+
+        show_books()
+
+        load_books()
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+# =========================================================
+# UPDATE BOOK
+# =========================================================
+
+def update_book_gui():
+
+    global selected_book_id
+
+
+    if selected_book_id is None:
+
+        messagebox.showerror(
+            "Error",
+            "Please select a book"
+        )
+
+        return
+
+
+    title = title_entry.get().strip()
+
+    author = author_entry.get().strip()
+
+    year = year_entry.get().strip()
+
+    stock = stock_entry.get().strip()
+
+
+    if not title or not author or not year or not stock:
+
+        messagebox.showerror(
+            "Error",
+            "Please fill all fields"
+        )
+
+        return
+
+
+    try:
+
+        year = int(year)
+
+        stock = int(stock)
+
+    except ValueError:
+
+        messagebox.showerror(
+            "Error",
+            "Year and stock must be numbers"
+        )
+
+        return
+
+
+    if year < 0 or stock < 0:
+
+        messagebox.showerror(
+            "Error",
+            "Year and stock cannot be negative"
+        )
+
+        return
+
+
+    success, message = update_book(
+        selected_book_id,
+        title,
+        author,
+        year,
+        stock
+    )
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        show_books()
+
+        load_books()
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+# =========================================================
+# DELETE BOOK
+# =========================================================
+
+def delete_book_gui():
+
+    global selected_book_id
+
+
+    if selected_book_id is None:
+
+        messagebox.showerror(
+            "Error",
+            "Please select a book"
+        )
+
+        return
+
+
+    confirm = messagebox.askyesno(
+        "Confirm",
+        "Delete selected book?"
+    )
+
+
+    if not confirm:
+
+        return
+
+
+    success, message = delete_book(
+        selected_book_id
+    )
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        clear_book_entries()
+
+        show_books()
+
+        load_books()
+
+        selected_book_id = None
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+# =========================================================
+# CLEAR BOOK ENTRIES
+# =========================================================
+
+def clear_book_entries():
+
+    title_entry.delete(
+        0,
+        tk.END
+    )
+
+    author_entry.delete(
+        0,
+        tk.END
+    )
+
+    year_entry.delete(
+        0,
+        tk.END
+    )
+
+    stock_entry.delete(
+        0,
+        tk.END
+    )
+
+
+# =========================================================
+# BOOK BUTTONS
+# =========================================================
+
+tk.Button(
+    root,
+    text="Add Book",
+    command=add_book_gui
+).grid(
+    row=4,
+    column=0
+)
+
+
+tk.Button(
+    root,
+    text="Update Book",
+    command=update_book_gui
+).grid(
+    row=4,
+    column=1
+)
+
+
+tk.Button(
+    root,
+    text="Delete Book",
+    command=delete_book_gui
+).grid(
+    row=4,
+    column=2
+)
+
+
+tk.Button(
+    root,
+    text="Show Books",
+    command=show_books
+).grid(
+    row=4,
+    column=3
+)
+
+
+# =========================================================
+# SEARCH
+# =========================================================
+
+tk.Label(
+    root,
+    text="Search:"
+).grid(
+    row=6,
+    column=0
+)
+
+
+search_entry = tk.Entry(root)
+
+search_entry.grid(
+    row=6,
+    column=1
+)
+
+
+def search_books_gui():
+
+    keyword = search_entry.get().strip()
+
+
+    if not keyword:
+
+        show_books()
+
+        return
+
+
+    books = search_books(keyword)
+
+
+    for item in books_tree.get_children():
+
+        books_tree.delete(item)
+
+
+    for book in books:
+
+        books_tree.insert(
+            "",
+            "end",
+            values=book
+        )
+
+
+tk.Button(
+    root,
+    text="Search",
+    command=search_books_gui
+).grid(
+    row=6,
+    column=2
+)
+
+
+tk.Button(
+    root,
+    text="Clear Search",
+    command=show_books
+).grid(
+    row=6,
+    column=3
+)
+
+
+# =========================================================
+# MEMBER SECTION
+# =========================================================
+
+tk.Label(
+    root,
+    text="Member Name:"
+).grid(
+    row=8,
+    column=0
+)
+
+
+member_name_entry = tk.Entry(root)
+
+member_name_entry.grid(
+    row=8,
+    column=1
+)
+
+
+# =========================================================
+# ADD MEMBER
+# =========================================================
+
+def add_member_gui():
+
+    name = member_name_entry.get().strip()
+
+
+    if not name:
+
+        messagebox.showerror(
+            "Error",
+            "Please enter member name"
+        )
+
+        return
+
+
+    success, message = add_member(name)
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        member_name_entry.delete(
+            0,
+            tk.END
+        )
+
+        load_members()
+
+        show_members()
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+tk.Button(
+    root,
+    text="Add Member",
+    command=add_member_gui
+).grid(
+    row=8,
+    column=2
+)
+
+
+# =========================================================
+# MEMBERS TREEVIEW
+# =========================================================
+
+members_tree = ttk.Treeview(
+    root,
+
+    columns=(
+        "id",
+        "name",
+        "join_date"
+    ),
+
+    show="headings",
+
+    height=6
+)
+
+
+members_tree.heading(
+    "id",
+    text="ID"
+)
+
+members_tree.heading(
+    "name",
+    text="Name"
+)
+
+members_tree.heading(
+    "join_date",
+    text="Join Date"
+)
+
+
+members_tree.grid(
+    row=9,
+    column=0,
+    columnspan=4,
+    padx=10,
+    pady=10
+)
+
+
+# =========================================================
+# SHOW MEMBERS
+# =========================================================
+
+def show_members():
+
+    for item in members_tree.get_children():
+
+        members_tree.delete(item)
+
+
+    members = get_all_members()
+
+
+    for member in members:
+
+        members_tree.insert(
+            "",
+            "end",
+            values=member
+        )
+
+
+# =========================================================
+# LOAD MEMBERS INTO COMBOBOX
+# =========================================================
+
+tk.Label(
+    root,
+    text="Borrow Member:"
+).grid(
+    row=10,
+    column=0
+)
+
+
+member_combo = ttk.Combobox(
+    root,
+    state="readonly"
+)
+
+member_combo.grid(
+    row=10,
+    column=1
+)
+
+
+def load_members():
+
+    global member_map
+
+    members = get_all_members()
+
+
+    member_map = {
+        member[1]: member[0]
+        for member in members
+    }
+
+
+    member_combo["values"] = list(
+        member_map.keys()
+    )
+
+
+# =========================================================
+# BOOK COMBOBOX
+# =========================================================
+
+tk.Label(
+    root,
+    text="Borrow Book:"
+).grid(
+    row=11,
+    column=0
+)
+
+
+book_combo = ttk.Combobox(
+    root,
+    state="readonly"
+)
+
+book_combo.grid(
+    row=11,
+    column=1
+)
+
+
+def load_books():
+
+    global book_map
+
+    books = get_available_books()
+
+
+    book_map = {
+        book[1]: book[0]
+        for book in books
+    }
+
+
+    book_combo["values"] = list(
+        book_map.keys()
+    )
+
+
+# =========================================================
+# BORROW BOOK
+# =========================================================
+
+def borrow_book_gui():
+
+    selected_member = member_combo.get()
+
+    selected_book = book_combo.get()
+
+
+    if not selected_member or not selected_book:
+
+        messagebox.showerror(
+            "Error",
+            "Please select member and book"
+        )
+
+        return
+
+
+    member_id = member_map[
+        selected_member
+    ]
+
+    book_id = book_map[
+        selected_book
+    ]
+
+
+    success, message = borrow_book(
+        member_id,
+        book_id
+    )
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        load_books()
+
+        load_borrowings()
+
+        show_books()
+
+        show_borrowings()
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+tk.Button(
+    root,
+    text="Borrow Book",
+    command=borrow_book_gui
+).grid(
+    row=12,
+    column=0
+)
+
+
+# =========================================================
+# ACTIVE BORROWINGS COMBOBOX
+# =========================================================
+
+tk.Label(
+    root,
+    text="Return Borrowing:"
+).grid(
+    row=13,
+    column=0
+)
+
+
+borrowing_combo = ttk.Combobox(
+    root,
+    state="readonly"
+)
+
+borrowing_combo.grid(
+    row=13,
+    column=1
+)
+
+
+def load_borrowings():
+
+    global borrowing_map
+
+    borrowings = get_active_borrowings()
+
+
+    borrowing_map = {}
+
+    display_values = []
+
+
+    for borrowing in borrowings:
+
+        borrowing_id = borrowing[0]
+
+        member_name = borrowing[1]
+
+        book_title = borrowing[2]
+
+
+        text = (
+            f"{member_name} - "
+            f"{book_title}"
+        )
+
+
+        borrowing_map[text] = borrowing_id
+
+        display_values.append(text)
+
+
+    borrowing_combo["values"] = display_values
+
+
+# =========================================================
+# RETURN BOOK
+# =========================================================
+
+def return_book_gui():
+
+    selected = borrowing_combo.get()
+
+
+    if not selected:
+
+        messagebox.showerror(
+            "Error",
+            "Please select a borrowing"
+        )
+
+        return
+
+
+    borrowing_id = borrowing_map[
+        selected
+    ]
+
+
+    success, message = return_book(
+        borrowing_id
+    )
+
+
+    if success:
+
+        messagebox.showinfo(
+            "Success",
+            message
+        )
+
+        load_books()
+
+        load_borrowings()
+
+        show_books()
+
+        show_borrowings()
+
+    else:
+
+        messagebox.showerror(
+            "Error",
+            message
+        )
+
+
+tk.Button(
+    root,
+    text="Return Book",
+    command=return_book_gui
+).grid(
+    row=13,
+    column=2
+)
+
+
+# =========================================================
+# ALL BORROWINGS TREEVIEW
+# =========================================================
+
+borrowings_tree = ttk.Treeview(
+    root,
+
+    columns=(
+        "id",
+        "member",
+        "book",
+        "borrow_date",
+        "return_date"
+    ),
+
+    show="headings",
+
+    height=7
+)
+
+
+borrowings_tree.heading(
+    "id",
+    text="ID"
+)
+
+borrowings_tree.heading(
+    "member",
+    text="Member"
+)
+
+borrowings_tree.heading(
+    "book",
+    text="Book"
+)
+
+borrowings_tree.heading(
+    "borrow_date",
+    text="Borrow Date"
+)
+
+borrowings_tree.heading(
+    "return_date",
+    text="Return Date"
+)
+
+
+borrowings_tree.grid(
+    row=15,
+    column=0,
+    columnspan=5,
+    padx=10,
+    pady=10
+)
+
+
+# =========================================================
+# SHOW ALL BORROWINGS
+# =========================================================
+
+def show_borrowings():
+
+    for item in borrowings_tree.get_children():
+
+        borrowings_tree.delete(item)
+
+
+    borrowings = get_all_borrowings()
+
+
+    for borrowing in borrowings:
+
+        borrowings_tree.insert(
+            "",
+            "end",
+            values=borrowing
+        )
+
+
+# =========================================================
+# STATISTICS
+# =========================================================
+
+def show_statistics():
+
+    book_count = get_book_count()
+
+    member_count = get_member_count()
+
+    active_borrowings = (
+        get_active_borrowing_count()
+    )
+
+    total_stock = get_total_stock()
+
+
+    messagebox.showinfo(
+        "Statistics",
+
+        f"Books: {book_count}\n"
+        f"Members: {member_count}\n"
+        f"Active Borrowings: "
+        f"{active_borrowings}\n"
+        f"Total Available Stock: "
+        f"{total_stock}"
+    )
+
+
+tk.Button(
+    root,
+    text="Statistics",
+    command=show_statistics
+).grid(
+    row=17,
+    column=0
+)
+
+
+# =========================================================
+# REFRESH BUTTON
+# =========================================================
+
+def refresh_all():
+
+    show_books()
+
+    show_members()
+
+    show_borrowings()
+
+    load_members()
+
+    load_books()
+
+    load_borrowings()
+
+
+tk.Button(
+    root,
+    text="Refresh All",
+    command=refresh_all
+).grid(
+    row=17,
+    column=1
+)
+
+
+# =========================================================
+# INITIAL LOAD
+# =========================================================
+
+create_data = True
+
+if create_data:
+
+    show_books()
+
+    show_members()
+
+    show_borrowings()
+
+    load_members()
+
+    load_books()
+
+    load_borrowings()
+
+
+# =========================================================
+# START APPLICATION
+# =========================================================
+
+root.mainloop()
